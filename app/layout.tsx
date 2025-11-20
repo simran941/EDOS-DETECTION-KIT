@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@fontsource/jetbrains-mono";
 import "./simple.css";
 import { GlobalAlertProvider } from "@/components/global-alert-provider";
+import { AuthProvider } from "@/components/auth-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <GlobalAlertProvider>{children}</GlobalAlertProvider>
+        <AuthProvider>
+          <GlobalAlertProvider>{children}</GlobalAlertProvider>
+        </AuthProvider>
       </body>
     </html>
   );

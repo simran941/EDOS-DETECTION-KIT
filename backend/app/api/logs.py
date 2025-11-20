@@ -9,8 +9,8 @@ import random
 import uuid
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models.database import User, SystemLog
-from ..api.auth import get_current_user
+from ..models.database import UserProfile, SystemLog
+from ..api.supabase_auth import get_current_user
 
 router = APIRouter()
 
@@ -18,7 +18,7 @@ router = APIRouter()
 @router.get("/recent")
 async def get_recent_logs(
     limit: int = Query(5, description="Number of recent logs to return"),
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get recent logs for overview page recent activity"""
@@ -86,7 +86,7 @@ async def get_logs(
     level: Optional[str] = Query(None, description="Filter by log level"),
     source: Optional[str] = Query(None, description="Filter by source"),
     limit: int = Query(100, description="Maximum number of logs to return"),
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get all logs with optional filtering"""
@@ -127,7 +127,7 @@ async def get_logs(
 @router.post("/")
 async def create_log(
     log_data: dict,
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Create a new log entry"""
@@ -153,7 +153,7 @@ async def create_log(
 
 @router.delete("/")
 async def clear_logs(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: UserProfile = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Clear all logs for the current user"""
     try:
@@ -169,7 +169,7 @@ async def clear_logs(
 
 @router.get("/sources")
 async def get_log_sources(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: UserProfile = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get unique log sources"""
     try:
@@ -195,7 +195,7 @@ async def get_log_levels():
 
 @router.get("/stats")
 async def get_log_stats(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: UserProfile = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get log statistics"""
     try:

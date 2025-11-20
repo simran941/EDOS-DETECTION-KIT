@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Shield, Mail, User, Lock } from "lucide-react";
+import { Eye, EyeOff, Github, Chrome, Terminal, UserCheck, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,19 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { supabase } from "@/lib/supabase";
 
 // Form schemas
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
 const signupSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -46,7 +45,7 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -54,107 +53,100 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
   const signupForm = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      username: "",
       email: "",
       password: "",
-      firstName: "",
-      lastName: "",
+      fullName: "",
     },
   });
 
+  // Email/Password Login with Supabase
   const handleLogin = async (data: LoginForm) => {
     setIsLoading(true);
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Login failed");
+      if (authError) throw authError;
+
+      if (authData.user) {
+        loginForm.reset();
+        onClose();
+        router.push("/dashboard");
       }
-
-      const result = await response.json();
-
-      // Store token and user data
-      localStorage.setItem("access_token", result.access_token);
-      localStorage.setItem("user", JSON.stringify(result.user));
-
-      // Reset form
-      loginForm.reset();
-
-      // Close modal and redirect
-      onClose();
-      router.push("/dashboard");
-    } catch (err) {
-      if (err instanceof Error) {
-        // Handle specific error cases
-        if (err.message.includes("fetch")) {
-          setError("Cannot connect to server. Please ensure the backend is running on port 8000.");
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError("Login failed. Please try again.");
-      }
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Email/Password Signup with Supabase
   const handleSignup = async (data: SignupForm) => {
     setIsLoading(true);
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.fullName,
+            display_name: data.fullName,
+          },
         },
-        body: JSON.stringify({
-          username: data.username,
-          email: data.email,
-          password: data.password,
-          first_name: data.firstName,
-          last_name: data.lastName,
-        }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Registration failed");
+      if (authError) throw authError;
+
+      if (authData.user) {
+        signupForm.reset();
+        onClose();
+        router.push("/dashboard");
       }
-
-      const result = await response.json();
-
-      // Store token and user data
-      localStorage.setItem("access_token", result.access_token);
-      localStorage.setItem("user", JSON.stringify(result.user));
-
-      // Reset form
-      signupForm.reset();
-
-      // Close modal and redirect
-      onClose();
-      router.push("/dashboard");
-    } catch (err) {
-      if (err instanceof Error) {
-        // Handle specific error cases
-        if (err.message.includes("fetch")) {
-          setError("Cannot connect to server. Please ensure the backend is running on port 8000.");
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError("Registration failed. Please try again.");
-      }
+    } catch (err: any) {
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Google OAuth Login
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || "Google login failed");
+      setIsLoading(false);
+    }
+  };
+
+  // GitHub OAuth Login
+  const handleGitHubLogin = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || "GitHub login failed");
       setIsLoading(false);
     }
   };
@@ -170,16 +162,32 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
             </div>
           </div>
-          <DialogTitle className="text-xl font-bold text-center text-green-400">root@edos-shield: ~/{mode}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-center text-green-400 flex items-center justify-center space-x-2">
+            <Terminal className="h-5 w-5" />
+            <span>root@edos-shield: ~/{mode}</span>
+          </DialogTitle>
         </DialogHeader>
 
         <Card className="border-green-500/30 bg-black/50">
           <CardHeader className="text-center">
-            <CardTitle className="text-lg font-mono text-white">
-              {mode === "login" ? "$ ./authenticate" : "$ ./register --new-user"}
+            <CardTitle className="text-lg font-mono text-white flex items-center justify-center space-x-2">
+              {mode === "login" ? (
+                <>
+                  <UserCheck className="h-4 w-4" />
+                  <span>$ ./authenticate --secure</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" />
+                  <span>$ ./register --new-user</span>
+                </>
+              )}
             </CardTitle>
             <CardDescription className="text-green-300 font-mono text-sm">
-              {mode === "login" ? "# Accessing secure terminal session" : "# Creating new security clearance"}
+              {mode === "login" 
+                ? "# Accessing secure terminal session via Supabase" 
+                : "# Creating new security clearance with cloud authentication"
+              }
             </CardDescription>
           </CardHeader>
 
@@ -193,23 +201,60 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
               </Badge>
             )}
 
+            {/* Social Login Buttons */}
+            <div className="space-y-3">
+              <div className="text-center text-green-400 font-mono text-sm mb-3">
+                # OAuth Providers Available
+              </div>
+              
+              <Button
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-mono flex items-center justify-center space-x-2 h-11"
+              >
+                <Chrome className="h-4 w-4" />
+                <span>{isLoading ? "$ connecting..." : "$ auth --provider=google"}</span>
+              </Button>
+
+              <Button
+                onClick={handleGitHubLogin}
+                disabled={isLoading}
+                className="w-full bg-gray-800 hover:bg-gray-700 text-white font-mono flex items-center justify-center space-x-2 h-11"
+              >
+                <Github className="h-4 w-4" />
+                <span>{isLoading ? "$ connecting..." : "$ auth --provider=github"}</span>
+              </Button>
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-green-500/30" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-black px-2 text-green-500 font-mono"># OR USE TERMINAL AUTH</span>
+              </div>
+            </div>
+
+            {/* Email/Password Form */}
             {mode === "login" ? (
               <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-green-400 font-mono text-sm">
-                    --username
+                  <Label htmlFor="email" className="text-green-400 font-mono text-sm">
+                    --email
                   </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-3 text-green-500 font-mono text-sm">$</span>
+                    <span className="absolute left-3 top-3 text-green-500 font-mono text-sm">@</span>
                     <Input
-                      id="username"
-                      placeholder="root"
+                      id="email"
+                      type="email"
+                      placeholder="security@edos.dev"
                       className="pl-8 bg-black border-green-500/30 text-green-400 placeholder:text-green-600 font-mono focus:border-green-500"
-                      {...loginForm.register("username")}
+                      {...loginForm.register("email")}
                     />
                   </div>
-                  {loginForm.formState.errors.username && (
-                    <p className="text-sm text-red-400 font-mono"># {loginForm.formState.errors.username.message}</p>
+                  {loginForm.formState.errors.email && (
+                    <p className="text-sm text-red-400 font-mono"># {loginForm.formState.errors.email.message}</p>
                   )}
                 </div>
 
@@ -251,46 +296,21 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
               </form>
             ) : (
               <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName" className="text-green-400 font-mono text-sm">
-                      --first-name
-                    </Label>
-                    <Input
-                      id="firstName"
-                      placeholder="John"
-                      className="bg-black border-green-500/30 text-green-400 placeholder:text-green-600 font-mono focus:border-green-500"
-                      {...signupForm.register("firstName")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName" className="text-green-400 font-mono text-sm">
-                      --last-name
-                    </Label>
-                    <Input
-                      id="lastName"
-                      placeholder="Doe"
-                      className="bg-black border-green-500/30 text-green-400 placeholder:text-green-600 font-mono focus:border-green-500"
-                      {...signupForm.register("lastName")}
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-green-400 font-mono text-sm">
-                    --username
+                  <Label htmlFor="fullName" className="text-green-400 font-mono text-sm">
+                    --full-name
                   </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-3 text-green-500 font-mono text-sm">$</span>
+                    <span className="absolute left-3 top-3 text-green-500 font-mono text-sm">{'>'}</span>
                     <Input
-                      id="username"
-                      placeholder="security_analyst"
+                      id="fullName"
+                      placeholder="John Security"
                       className="pl-8 bg-black border-green-500/30 text-green-400 placeholder:text-green-600 font-mono focus:border-green-500"
-                      {...signupForm.register("username")}
+                      {...signupForm.register("fullName")}
                     />
                   </div>
-                  {signupForm.formState.errors.username && (
-                    <p className="text-sm text-red-400 font-mono"># {signupForm.formState.errors.username.message}</p>
+                  {signupForm.formState.errors.fullName && (
+                    <p className="text-sm text-red-400 font-mono"># {signupForm.formState.errors.fullName.message}</p>
                   )}
                 </div>
 
@@ -303,7 +323,7 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
                     <Input
                       id="email"
                       type="email"
-                      placeholder="admin@security.com"
+                      placeholder="security@edos.dev"
                       className="pl-8 bg-black border-green-500/30 text-green-400 placeholder:text-green-600 font-mono focus:border-green-500"
                       {...signupForm.register("email")}
                     />

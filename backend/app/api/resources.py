@@ -9,8 +9,8 @@ import uuid
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from ..database import get_db
-from ..models.database import User, UserResource, CloudProvider, ResourceType
-from ..api.auth import get_current_user
+from ..models.database import UserProfile, UserResource, CloudProvider, ResourceType
+from ..api.supabase_auth import get_current_user
 import random
 
 router = APIRouter()
@@ -35,7 +35,7 @@ class ResourceUpdate(BaseModel):
 
 @router.get("/providers")
 async def get_cloud_providers(
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get available cloud providers"""
@@ -48,7 +48,7 @@ async def get_cloud_providers(
 
 @router.get("/types")
 async def get_resource_types(
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get available resource types"""
@@ -71,7 +71,7 @@ async def get_resources(
     ),
     status: Optional[str] = Query(None, description="Filter by status"),
     health: Optional[str] = Query(None, description="Filter by health status"),
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get all cloud resources with optional filtering from database"""
@@ -123,7 +123,7 @@ async def get_resources(
 @router.post("/")
 async def create_resource(
     resource: ResourceCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Create a new cloud resource"""
@@ -181,7 +181,7 @@ async def create_resource(
 @router.get("/{resource_id}")
 async def get_resource(
     resource_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get a specific resource"""
@@ -211,7 +211,7 @@ async def get_resource(
 async def update_resource(
     resource_id: str,
     resource_data: ResourceUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Update a resource"""
@@ -241,7 +241,7 @@ async def update_resource(
 @router.delete("/{resource_id}")
 async def delete_resource(
     resource_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: UserProfile = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Delete a resource"""
@@ -261,7 +261,7 @@ async def delete_resource(
 
 @router.get("/stats/summary")
 async def get_resource_stats(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: UserProfile = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get resource statistics"""
     total = (

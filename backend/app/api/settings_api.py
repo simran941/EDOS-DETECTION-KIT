@@ -5,7 +5,7 @@ Settings Management API
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, Optional
 from datetime import datetime
-from ..api.auth import verify_token
+from ..api.supabase_auth import get_current_user
 
 router = APIRouter()
 
@@ -64,7 +64,7 @@ current_settings = DEFAULT_SETTINGS.copy()
 
 
 @router.get("/")
-async def get_all_settings(current_user: str = Depends(verify_token)):
+async def get_all_settings(current_user: str = Depends(get_current_user)):
     """Get all system settings"""
     return {
         "settings": current_settings,
@@ -74,7 +74,7 @@ async def get_all_settings(current_user: str = Depends(verify_token)):
 
 
 @router.get("/security")
-async def get_security_settings(current_user: str = Depends(verify_token)):
+async def get_security_settings(current_user: str = Depends(get_current_user)):
     """Get security settings"""
     return {
         "security": current_settings["security"],
@@ -83,7 +83,7 @@ async def get_security_settings(current_user: str = Depends(verify_token)):
 
 
 @router.get("/alerts")
-async def get_alert_settings(current_user: str = Depends(verify_token)):
+async def get_alert_settings(current_user: str = Depends(get_current_user)):
     """Get alert settings"""
     return {
         "alerts": current_settings["alerts"],
@@ -92,7 +92,7 @@ async def get_alert_settings(current_user: str = Depends(verify_token)):
 
 
 @router.get("/system")
-async def get_system_settings(current_user: str = Depends(verify_token)):
+async def get_system_settings(current_user: str = Depends(get_current_user)):
     """Get system settings"""
     return {
         "system": current_settings["system"],
@@ -101,7 +101,7 @@ async def get_system_settings(current_user: str = Depends(verify_token)):
 
 
 @router.get("/network")
-async def get_network_settings(current_user: str = Depends(verify_token)):
+async def get_network_settings(current_user: str = Depends(get_current_user)):
     """Get network settings"""
     return {
         "network": current_settings["network"],
@@ -111,7 +111,7 @@ async def get_network_settings(current_user: str = Depends(verify_token)):
 
 @router.put("/")
 async def update_all_settings(
-    settings_data: Dict[str, Any], current_user: str = Depends(verify_token)
+    settings_data: Dict[str, Any], current_user: str = Depends(get_current_user)
 ):
     """Update all settings"""
     global current_settings
@@ -134,7 +134,7 @@ async def update_all_settings(
 
 @router.put("/security")
 async def update_security_settings(
-    security_data: Dict[str, Any], current_user: str = Depends(verify_token)
+    security_data: Dict[str, Any], current_user: str = Depends(get_current_user)
 ):
     """Update security settings"""
     global current_settings
@@ -150,7 +150,7 @@ async def update_security_settings(
 
 @router.put("/alerts")
 async def update_alert_settings(
-    alerts_data: Dict[str, Any], current_user: str = Depends(verify_token)
+    alerts_data: Dict[str, Any], current_user: str = Depends(get_current_user)
 ):
     """Update alert settings"""
     global current_settings
@@ -166,7 +166,7 @@ async def update_alert_settings(
 
 @router.put("/system")
 async def update_system_settings(
-    system_data: Dict[str, Any], current_user: str = Depends(verify_token)
+    system_data: Dict[str, Any], current_user: str = Depends(get_current_user)
 ):
     """Update system settings"""
     global current_settings
@@ -182,7 +182,7 @@ async def update_system_settings(
 
 @router.put("/network")
 async def update_network_settings(
-    network_data: Dict[str, Any], current_user: str = Depends(verify_token)
+    network_data: Dict[str, Any], current_user: str = Depends(get_current_user)
 ):
     """Update network settings"""
     global current_settings
@@ -197,7 +197,7 @@ async def update_network_settings(
 
 
 @router.post("/reset")
-async def reset_settings_to_defaults(current_user: str = Depends(verify_token)):
+async def reset_settings_to_defaults(current_user: str = Depends(get_current_user)):
     """Reset all settings to default values"""
     global current_settings
     current_settings = DEFAULT_SETTINGS.copy()
@@ -212,7 +212,7 @@ async def reset_settings_to_defaults(current_user: str = Depends(verify_token)):
 
 @router.post("/reset/{section}")
 async def reset_section_to_defaults(
-    section: str, current_user: str = Depends(verify_token)
+    section: str, current_user: str = Depends(get_current_user)
 ):
     """Reset specific settings section to defaults"""
     global current_settings

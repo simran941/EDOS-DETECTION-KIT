@@ -13,7 +13,8 @@ from typing import Generator
 
 # Database configuration
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://edos_user:edos_password@localhost:5432/edos_security"
+    "DATABASE_URL",
+    "postgresql://postgres:masterpuneet@db.fekiwfmrimfkkskjmldt.supabase.co:5432/postgres",
 )
 
 # Create SQLAlchemy engine

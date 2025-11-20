@@ -33,15 +33,13 @@ Base = declarative_base()
 # =============================================
 
 
-class User(Base):
-    __tablename__ = "users"
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
 
-    # Primary identification
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username = Column(String(50), unique=True, nullable=False, index=True)
+    # Primary identification - matches Supabase auth.users.id
+    id = Column(UUID(as_uuid=True), primary_key=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
-    salt = Column(String(32), nullable=False)
+    username = Column(String(50), unique=True, nullable=True, index=True)
 
     # Profile information
     first_name = Column(String(100))

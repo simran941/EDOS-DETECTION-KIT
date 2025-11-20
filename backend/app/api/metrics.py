@@ -10,13 +10,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..database import get_db
 from ..models.database import (
-    User,
+    UserProfile,
     SecurityAlert,
     NetworkTraffic,
     SystemLog,
     SystemMetric,
 )
-from ..api.auth import get_current_user
+from ..api.supabase_auth import get_current_user
 
 router = APIRouter()
 
@@ -73,7 +73,7 @@ def generate_time_series_data(hours: int = 24, interval_minutes: int = 30):
 
 
 @router.get("/system")
-async def get_system_metrics(current_user: User = Depends(get_current_user)):
+async def get_system_metrics(current_user: UserProfile = Depends(get_current_user)):
     """Get current system performance metrics"""
     return {
         "timestamp": datetime.utcnow().isoformat(),
@@ -97,7 +97,7 @@ async def get_system_metrics(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/network")
-async def get_network_metrics(current_user: User = Depends(get_current_user)):
+async def get_network_metrics(current_user: UserProfile = Depends(get_current_user)):
     """Get network performance metrics"""
     return {
         "timestamp": datetime.utcnow().isoformat(),
@@ -120,7 +120,7 @@ async def get_network_metrics(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/threats")
-async def get_threat_metrics(current_user: User = Depends(get_current_user)):
+async def get_threat_metrics(current_user: UserProfile = Depends(get_current_user)):
     """Get threat detection metrics"""
     return {
         "timestamp": datetime.utcnow().isoformat(),
@@ -147,7 +147,7 @@ async def get_threat_metrics(current_user: User = Depends(get_current_user)):
 
 @router.get("/dashboard")
 async def get_dashboard_metrics(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: UserProfile = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get overview metrics for dashboard from database"""
     try:
@@ -256,7 +256,7 @@ async def get_dashboard_metrics(
 
 @router.get("/time-series")
 async def get_time_series_data(
-    timerange: str = "24h", current_user: User = Depends(get_current_user)
+    timerange: str = "24h", current_user: UserProfile = Depends(get_current_user)
 ):
     """Get time series data for charts"""
     import math
@@ -283,7 +283,7 @@ async def get_time_series_data(
 
 
 @router.get("/alerts/timeline")
-async def get_alerts_timeline(current_user: User = Depends(get_current_user)):
+async def get_alerts_timeline(current_user: UserProfile = Depends(get_current_user)):
     """Get alerts timeline for the last 24 hours"""
     timeline = []
     start_time = datetime.utcnow() - timedelta(hours=24)

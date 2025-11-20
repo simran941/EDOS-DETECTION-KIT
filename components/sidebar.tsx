@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useSidebar } from "@/components/sidebar-context";
+import { useAuth } from "@/components/auth-context";
 import {
   Shield,
   Activity,
@@ -111,26 +112,20 @@ const bottomNavigation = [
 
 export function Sidebar({ className }: SidebarProps) {
   const { collapsed, setCollapsed } = useSidebar();
+  const { user, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        await fetch("http://localhost:8000/api/auth/logout", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-      }
+      console.log("🚪 Sidebar: Initiating logout...");
+      await signOut();
+      console.log("🏠 Sidebar: Redirecting to home page...");
+      router.push("/");
     } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("user");
+      console.error("❌ Sidebar: Logout error:", error);
+      // Force redirect even if Supabase logout fails
+      console.log("🔄 Sidebar: Force redirecting to home...");
       router.push("/");
     }
   };
@@ -253,11 +248,12 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       {/* User Info (when expanded) */}
-      {!collapsed && (
+      {!collapsed && user && (
         <div className="border-t border-green-500/30 p-3">
           <div className="text-xs text-green-500 font-mono">
-            <div>root@edos-shield</div>
-            <div className="text-green-600">clearance: admin</div>
+            <div>{user.email}</div>
+            <div className="text-green-600">clearance: {user.user_metadata?.full_name ? "admin" : "user"}</div>
+            <div className="text-green-600 text-[10px]">auth: supabase</div>
           </div>
         </div>
       )}

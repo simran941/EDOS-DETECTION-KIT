@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Shield, Terminal, Code, Activity, Lock, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AuthModal } from "@/components/auth-modal";
+import { useAuth } from "@/components/auth-context";
 
 export default function Home() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -13,6 +15,16 @@ export default function Home() {
   const [threatCount, setThreatCount] = useState(847329);
   const [terminalText, setTerminalText] = useState("");
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (user && !loading) {
+      console.log("🏠 HomePage: User authenticated, redirecting to dashboard");
+      router.push("/dashboard");
+    }
+  }, [user, loading, router]);
 
   const terminalLines = [
     "$ sudo systemctl status edos-shield",
@@ -61,6 +73,18 @@ export default function Home() {
     setAuthMode(mode);
     setIsAuthModalOpen(true);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <div className="text-xl">$ initializing security protocols...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono overflow-hidden">

@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 from datetime import datetime, timedelta
 import random
 import uuid
-from ..api.auth import verify_token
+from ..api.supabase_auth import get_current_user
 
 router = APIRouter()
 
@@ -100,7 +100,7 @@ for _ in range(len(LOCATIONS)):
 
 
 @router.get("/traffic/real-time")
-async def get_real_time_traffic(current_user: str = Depends(verify_token)):
+async def get_real_time_traffic(current_user=Depends(get_current_user)):
     """Get current real-time network traffic for 3D globe"""
     # Keep only recent arcs (last 30)
     global current_arcs
@@ -117,7 +117,7 @@ async def get_real_time_traffic(current_user: str = Depends(verify_token)):
 
 
 @router.get("/threats/locations")
-async def get_threat_locations(current_user: str = Depends(verify_token)):
+async def get_threat_locations(current_user=Depends(get_current_user)):
     """Get all known threat source locations"""
     threat_locations = [p for p in current_points if p["isAttack"]]
 
@@ -129,7 +129,7 @@ async def get_threat_locations(current_user: str = Depends(verify_token)):
 
 
 @router.get("/connections/active")
-async def get_active_connections(current_user: str = Depends(verify_token)):
+async def get_active_connections(current_user=Depends(get_current_user)):
     """Get currently active network connections"""
     # Filter to recent connections (last 5 minutes)
     cutoff = datetime.utcnow() - timedelta(minutes=5)
@@ -150,7 +150,7 @@ async def get_active_connections(current_user: str = Depends(verify_token)):
 
 
 @router.get("/stats")
-async def get_network_stats(current_user: str = Depends(verify_token)):
+async def get_network_stats(current_user=Depends(get_current_user)):
     """Get network statistics for dashboard"""
     total_connections = len(current_arcs)
     attack_connections = len([a for a in current_arcs if a["isAttack"]])
@@ -192,7 +192,7 @@ async def get_network_stats(current_user: str = Depends(verify_token)):
 
 @router.post("/traffic")
 async def add_network_traffic(
-    traffic_data: dict, current_user: str = Depends(verify_token)
+    traffic_data: dict, current_user=Depends(get_current_user)
 ):
     """Manually add network traffic (for testing)"""
     global current_arcs
