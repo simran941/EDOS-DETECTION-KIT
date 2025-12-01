@@ -10,20 +10,20 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, fallback }: AuthGuardProps) {
-  const { user, loading, session } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const [hasRedirected, setHasRedirected] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     // Only redirect if we're certain there's no authentication
-    if (!loading && !user && !session && !hasRedirected) {
-      console.log("🔐 AuthGuard: No user/session found, redirecting to home");
+    if (!loading && !isAuthenticated && !hasRedirected) {
+      console.log("🔐 AuthGuard: No user found, redirecting to home");
       setHasRedirected(true);
       router.push("/");
-    } else if (user && session) {
+    } else if (user && isAuthenticated) {
       console.log("🔐 AuthGuard: User authenticated, allowing access");
     }
-  }, [user, session, loading, router, hasRedirected]);
+  }, [user, isAuthenticated, loading, router, hasRedirected]);
 
   if (loading) {
     return (
@@ -40,7 +40,7 @@ export function AuthGuard({ children, fallback }: AuthGuardProps) {
   }
 
   // If no user and not loading, we should have redirected already
-  if (!user || !session) {
+  if (!user || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center">
         <div className="text-center">

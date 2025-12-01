@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Github, Chrome, Terminal, UserCheck, UserPlus } from "lucide-react";
+import { Eye, EyeOff, Terminal, UserCheck, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/auth-context";
 
 // Form schemas
 const loginSchema = z.object({
@@ -41,6 +41,7 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { login, register } = useAuth();
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -59,94 +60,42 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
     },
   });
 
-  // Email/Password Login with Supabase
+  // Email/Password Login with Spring Boot Backend
   const handleLogin = async (data: LoginForm) => {
     setIsLoading(true);
     setError("");
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-
-      if (authError) throw authError;
-
-      if (authData.user) {
-        loginForm.reset();
-        onClose();
-        router.push("/dashboard");
-      }
+      await login(data.email, data.password);
+      loginForm.reset();
+      onClose();
+      router.push("/dashboard");
+      console.log("🔐 Login successful, redirecting to dashboard");
     } catch (err: any) {
-      setError(err.message || "Login failed. Please try again.");
+      const errorMessage = err.message || "Login failed. Please try again.";
+      setError(errorMessage);
+      console.error("❌ Login error:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Email/Password Signup with Supabase
+  // Email/Password Signup with Spring Boot Backend
   const handleSignup = async (data: SignupForm) => {
     setIsLoading(true);
     setError("");
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.fullName,
-            display_name: data.fullName,
-          },
-        },
-      });
-
-      if (authError) throw authError;
-
-      if (authData.user) {
-        signupForm.reset();
-        onClose();
-        router.push("/dashboard");
-      }
+      await register(data.email, data.password, data.fullName);
+      signupForm.reset();
+      onClose();
+      router.push("/dashboard");
+      console.log("✅ Registration successful, redirecting to dashboard");
     } catch (err: any) {
-      setError(err.message || "Registration failed. Please try again.");
+      const errorMessage = err.message || "Registration failed. Please try again.";
+      setError(errorMessage);
+      console.error("❌ Registration error:", err);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Google OAuth Login
-  const handleGoogleLogin = async () => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || "Google login failed");
-      setIsLoading(false);
-    }
-  };
-
-  // GitHub OAuth Login
-  const handleGitHubLogin = async () => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "github",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || "GitHub login failed");
       setIsLoading(false);
     }
   };
@@ -185,8 +134,8 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
             </CardTitle>
             <CardDescription className="text-green-300 font-mono text-sm">
               {mode === "login" 
-                ? "# Accessing secure terminal session via Supabase" 
-                : "# Creating new security clearance with cloud authentication"
+                ? "# Accessing secure terminal session via Spring Boot Backend" 
+                : "# Creating new security clearance with backend authentication"
               }
             </CardDescription>
           </CardHeader>
@@ -200,41 +149,6 @@ export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProp
                 [ERROR] {error}
               </Badge>
             )}
-
-            {/* Social Login Buttons */}
-            <div className="space-y-3">
-              <div className="text-center text-green-400 font-mono text-sm mb-3">
-                # OAuth Providers Available
-              </div>
-              
-              <Button
-                onClick={handleGoogleLogin}
-                disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-mono flex items-center justify-center space-x-2 h-11"
-              >
-                <Chrome className="h-4 w-4" />
-                <span>{isLoading ? "$ connecting..." : "$ auth --provider=google"}</span>
-              </Button>
-
-              <Button
-                onClick={handleGitHubLogin}
-                disabled={isLoading}
-                className="w-full bg-gray-800 hover:bg-gray-700 text-white font-mono flex items-center justify-center space-x-2 h-11"
-              >
-                <Github className="h-4 w-4" />
-                <span>{isLoading ? "$ connecting..." : "$ auth --provider=github"}</span>
-              </Button>
-            </div>
-
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-green-500/30" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-black px-2 text-green-500 font-mono"># OR USE TERMINAL AUTH</span>
-              </div>
-            </div>
 
             {/* Email/Password Form */}
             {mode === "login" ? (
